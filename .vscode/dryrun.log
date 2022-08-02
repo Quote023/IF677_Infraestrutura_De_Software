@@ -1,0 +1,6 @@
+make --dry-run --always-make --keep-going --print-directory
+make: Entering directory `/Users/quote023/Projects/CIn/IF677_Infraestrutura_De_Software'
+make: Leaving directory `/Users/quote023/Projects/CIn/IF677_Infraestrutura_De_Software'
+ 
+make: *** No targets specified and no makefile found.  Stop.
+

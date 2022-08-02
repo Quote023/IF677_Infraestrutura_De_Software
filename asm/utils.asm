@@ -1,10 +1,10 @@
-org 0x7c00
-jmp 0x0000:main
-
-data:
-	NUMERO times 15 db 0
-
+; %ifndef M_UTILS
+; %define M_UTILS
 ;;Utilities
+
+%define DELAY_L(a) (a	& 0xff00)
+%define DELAY_H(b) (b >> 8 & 0xff00)
+
 %macro putchar 1
   push %1 ; passar parametro pra stack
   call _putchar
@@ -42,6 +42,106 @@ data:
   putchar 0x0d ;\r                  
   putchar 0x0a ;\n
 %endmacro
+
+%macro putpx 3
+  push ax
+  push dx
+  push cx
+  mov al, %1 ; cor
+  mov dx, %2 ; x
+  mov cx, %3 ; y
+  call _putpx
+  pop cx
+  pop dx
+  pop ax
+%endmacro
+
+%macro putpx 1
+  push ax
+  mov al, %1 ; cor
+  call _putpx
+  pop ax
+%endmacro
+
+%macro putpx 0
+  call _putpx
+%endmacro
+
+%macro cls 1
+  push ax
+  push dx
+  push cx
+  mov al, %1 ; cor
+  call _cls
+  pop cx
+  pop dx
+  pop ax
+%endmacro
+
+%macro cls 0
+  cls 0
+%endmacro
+
+%macro mode13h 0
+  push ax
+  call _initVideo
+  pop ax
+%endmacro
+
+%macro setCursorPos 3
+  push bx
+  push dx
+  push cx
+  mov dx, %1 ; x
+  mov cx, %2 ; y
+  mov bx, %3 ; y
+  call _setCursorPos
+  pop cx
+  pop dx
+  pop bx
+%endmacro
+
+%macro setCursorPos 2
+  push ax
+  xor ax, ax  ;zera ax
+  setCursorPos %1 %2 ax
+  pop ax
+%endmacro
+
+%macro delay 1
+  push si ; salva o estado de si
+  push ax ; salva o estado de ax 
+  push dx ; salva o estado de dx 
+  push cx ; salva o estado de cx 
+  push DELAY_H(%1) ; passar parametro pra stack
+  push DELAY_L(%1) ; passar parametro pra stack
+  call _delay
+  add sp, 2 ; volta stack pra posição inicial
+  pop cx  ; retorna estado de cx
+  pop dx  ; retorna estado de dx
+  pop ax  ; retorna estado de ax
+  pop si  ; retorna o estado de si
+%endmacro
+
+_initVideo:
+  mov al, 13h
+  mov ah, 0
+  int 10h
+  ret
+
+_setCursorPos:
+  mov ah, 02h
+  int 10h
+  ret
+
+_delay:
+  mov si, sp
+	mov ah, 86h
+  mov cx, [si+4] ;10.000 microssegundos High Byte
+	mov dx, [si+2] ;10.000 microssegundos Low Byte
+	int 15h 
+ret
+
 
 _putchar: ; imprime caracter que estiver na stack
   mov si, sp
@@ -95,76 +195,30 @@ _prints: ;Imprime uma string
     jmp .loop
   .endloop:
   ret 
-;;End Macros
 
-stoi:							; mov si, string
-	xor cx, cx
-	xor ax, ax
-	.loop1:
-		push ax
-		lodsb
-		mov cl, al
-		pop ax
-		cmp cl, 0	
-		je .endloop1
-		sub cl, 48				; '9'-'0' = 9
-		mov bx, 10
-		mul bx					; 999*10 = 9990
-		add ax, cx				; 9990+9 = 9999
-		jmp .loop1
-	.endloop1:
-	ret
-  
-itos:						; mov ax, int / mov di, string
-  push 0
-	.loopitoc: ; converte cada digito em 1 caracter 
-		cmp ax, 0
-		je .poploop
-		xor dx, dx ; zerar o resto
-		mov bx, 10 ; dividir ax por 10 (resultado: ax, resto: dx)
-		div bx		 ; ex: ax = 1234 => (ax:123, dx:4)
-		xchg ax, dx	; swap ax, dx => (ax:4, dx:123)
-		add ax, '0'	; converte no valor da tabela ascii (4 + 48 = 52 == '4')
-		push ax ; joga na pilha
-		xchg ax, dx ; destroca pra continuar as divisões (ax:123, dx:4)
-		jmp .loopitoc
-	.poploop:
-    pop ax
-    cmp ax, 0
-    je .done
-    stosb
-    jmp .poploop
-	.done:
-		mov al, 0
-		stosb
-		ret
-
-main:
-	xor ax, ax ; limpar registradores
-	mov es, ax
-  mov bx, ax
-  mov dx, ax
-  mov cx, ax
-
-  mov di, NUMERO ; carregar input do usuário
-  gets
-  mov si,NUMERO
-  call stoi ; transformar o input(SI) em numero e guarda em AX
-
-  mov dl,al ; ax = n
-  inc dl; (n+1)
-  mov bl, 2
-  div bl ; n/2
-  mov cl,al ; cx = (n/2)
-  mov al,dl ; ax = n + 1
-  mul cl ; ax = (n + 1) * (n/2)
-
-  mov di,NUMERO
-  call itos
-  prints NUMERO
+_putpx:
+  mov ah, 0Ch ; imprime um pixel na tela na cor (al) na posiçao (dx,cx)
+  int 10h ; interrupção de video
   ret
-                
-    
-	
-times 510-($-$$) db 0
-dw 0xaa55
+
+_cls:
+  ;Percorre toda a janela printando pixels da cor preta
+  mov dx, 0
+  _cls.loopLine:
+      cmp dx, 200
+      je _cls.endLoopLine
+      mov cx, 0
+      _cls.loopColumn:
+          cmp cx, 320
+          je _cls.endLoopColumn
+          putpx
+          inc cx
+          jmp _cls.loopColumn
+      _cls.endLoopColumn:
+          inc dx
+          jmp _cls.loopLine
+  _cls.endLoopLine:
+  ret
+
+;;End Macros
+; %endif
