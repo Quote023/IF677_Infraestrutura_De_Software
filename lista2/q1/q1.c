@@ -37,7 +37,7 @@ int setup(int qtd_candidatos, int qtd_threads)
   memset(votos, 0, sizeof(votos));
 
   for (int i = 0; i < qtd_threads; ++i)
-    pthread_create(&ts[i], NULL, somar, &(struct somar_props){.id = i, .qtd_candidatos = qtd_candidatos, .votos = &votos});
+    pthread_create(&ts[i], NULL, somar, &(struct somar_props){.id = i, .qtd_candidatos = qtd_candidatos, .votos = votos});
   for (int i = 0; i < qtd_threads; ++i)
     pthread_join(ts[i], NULL);
 
