@@ -34,6 +34,9 @@ int setup(int qtd_candidatos, int qtd_threads)
 {
   pthread_t ts[qtd_threads];
   int votos[qtd_candidatos + 1];
+  int total = 0;
+  int vencedor = 0;
+
   memset(votos, 0, sizeof(votos));
 
   for (int i = 0; i < qtd_threads; ++i)
@@ -42,7 +45,17 @@ int setup(int qtd_candidatos, int qtd_threads)
     pthread_join(ts[i], NULL);
 
   for (int i = 0; i <= qtd_candidatos; ++i)
-    printf("Candidato %d: %d votos\n", i, votos[i]);
+    total += votos[i];
+
+  for (int i = 1; i <= qtd_candidatos; ++i)
+  {
+    if (votos[vencedor] < votos[i])
+      vencedor = i;
+    printf("Candidato %d:\tVotos: %d\t(%d%%)\n", i, votos[i], ((votos[i] * 100) / total));
+  }
+
+  printf("\nVotos Nulos: %d\nTotal de Votos: %d\n", votos[0], total);
+  printf("O Candidato %d venceu as eleicoes!\n", vencedor);
 
   return 0;
 }
