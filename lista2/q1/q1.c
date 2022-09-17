@@ -28,6 +28,8 @@ void *somar(void *args)
     ++(props->votos[x]);
     pthread_mutex_unlock(&mymutex);
   }
+
+  return 0;
 }
 
 int setup(int qtd_candidatos, int qtd_threads)
